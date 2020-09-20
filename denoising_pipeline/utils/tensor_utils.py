@@ -30,17 +30,8 @@ def reshape_tensor(x, new_shape=(224, 224)):
     )
 
 
-def flatten(x: torch.Tensor) -> torch.Tensor:
-    return x.view(x.size(0), -1)
-
-
-def L1_norm(x):
-    x_sum = x.sum()
-    return x / x_sum
-
-
 def preprocess_image(img: np.ndarray) -> torch.Tensor:
-    return torch.FloatTensor(img).permute(2, 0, 1) / 255.0 - 0.5
+    return (torch.FloatTensor(img.copy()).permute(2, 0, 1) - 127.5) / 128
 
 
 class TensorRotate(Enum):

@@ -2,7 +2,6 @@ import cv2
 import os
 import torch
 from torch.utils.data import Dataset
-import random
 import numpy as np
 from tqdm import tqdm
 from denoising_pipeline.utils.image_utils \
@@ -66,14 +65,14 @@ class SeriesAndComputingClearDataset(Dataset):
         self.window_size = window_size
 
     def get_random_images(self):
-        select_series_index = random.randint(
+        select_series_index = np.random.randint(
             0,
-            len(self.series_folders_pathes) - 1
+            len(self.series_folders_pathes)
         )
 
-        select_image_index = random.randint(
+        select_image_index = np.random.randint(
             0,
-            len(self.series_folders_pathes[select_series_index]) - 1
+            len(self.series_folders_pathes[select_series_index])
         )
 
         select_image = self.series_folders_images[
@@ -89,7 +88,9 @@ class SeriesAndComputingClearDataset(Dataset):
 
     def __getitem__(self, idx):
         crop1, crop2 = random_crop_with_transforms(
-            *self.get_random_images(), self.window_size
+            *self.get_random_images(),
+            window_size=self.window_size,
+            random_swap=False
         )
 
         return preprocess_image(crop1), preprocess_image(crop2)

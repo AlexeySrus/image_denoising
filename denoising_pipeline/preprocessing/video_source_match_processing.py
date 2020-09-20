@@ -6,7 +6,7 @@ from functools import reduce
 import os
 import numpy as np
 from denoising_pipeline.utils.image_matcher import ImageMatcher
-from denoising_pipeline.datasets import VideoFramesGenerator
+from denoising_pipeline.datasets.series_dataset_generator import VideoFramesGenerator
 from denoising_pipeline.utils.image_utils import image_preprocessing
 
 

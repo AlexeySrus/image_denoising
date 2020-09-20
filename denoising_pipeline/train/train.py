@@ -10,8 +10,6 @@ from denoising_pipeline.model_estimator.model import \
 from denoising_pipeline.utils.callbacks import (SaveModelPerEpoch, VisPlot,
                                                SaveOptimizerPerEpoch,
                                                VisImageForAE)
-from denoising_pipeline.datasets.series_dataset_generator import \
-    SequentialDataset
 from denoising_pipeline.datasets.configure_dataset import \
     build_dataset_from_config
 from torch.utils.data import DataLoader
@@ -70,6 +68,7 @@ def main():
 
     optimizers = {
         'adam': torch.optim.Adam,
+        'adamw': torch.optim.AdamW,
         'nadam': Nadam,
         'radam': Radam,
         'sgd': torch.optim.SGD,

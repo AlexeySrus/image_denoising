@@ -20,7 +20,7 @@ class AbstractCallback(object):
 class SaveModelPerEpoch(AbstractCallback):
     def __init__(self, path, save_step=1):
         self.path = path
-        self.step=save_step
+        self.step = save_step
 
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -183,8 +183,8 @@ class VisImageForAE(AbstractCallback):
                                 x.unsqueeze(0),
                                 scale_factor=(self.scale, self.scale)
                             ).squeeze(),
-                            -0.5, 0.5
-                        ) + 0.5,
+                            -1, 1
+                        ) / 2 + 0.5,
                         win=self.windows[win],
                         opts=dict(title=self.title)
                     )

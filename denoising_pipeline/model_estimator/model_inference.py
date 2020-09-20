@@ -87,7 +87,11 @@ def denoise_inference(
 
     result_img = (
             torch.clamp(
-                result_image[:, :tensor_img.size(1), :tensor_img.size(2)] + 0.5,
+                result_image[
+                    :,
+                    :tensor_img.size(1),
+                    :tensor_img.size(2)
+                ] / 2 + 0.5,
                 0,
                 1
             ).to('cpu').permute(1, 2, 0).numpy() * 255.0

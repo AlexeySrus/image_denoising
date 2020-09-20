@@ -1,6 +1,7 @@
 import cv2
 from enum import Enum
 import numpy as np
+import random
 
 
 class Rotate(Enum):
@@ -31,21 +32,28 @@ def rotate_crop(img: np.ndarray, rot_value: Rotate) -> np.ndarray:
 def random_crop(
         image1: np.ndarray,
         image2: np.ndarray,
-        window_size: int = 224) -> tuple:
+        window_size: int = 224,
+        random_swap: bool = True) -> tuple:
     """
 
     Args:
         image1:
         image2:
         window_size:
+        random_swap:
 
     Returns:
 
     """
-    select_image1, select_image2 = np.random.choice(
-        [image1, image2],
-        [image2, image1]
-    )
+    if random_swap:
+        select_image1, select_image2 = random.choice(
+            [
+                [image1, image2],
+                [image2, image1]
+            ]
+        )
+    else:
+        select_image1, select_image2 = image1, image2
 
     x = np.random.randint(0, select_image1.shape[1] - window_size)
     y = np.random.randint(0, select_image1.shape[0] - window_size)
@@ -81,28 +89,27 @@ def apply_transforms(crop1: np.ndarray, crop2: np.ndarray) -> tuple:
     crop1 = rotate_crop(crop1, select_rotation)
     crop2 = rotate_crop(crop2, select_rotation)
 
-    return np.random.choice(
-        [crop1, crop2],
-        [np.flip(crop1, 1), np.flip(crop2, 1)]
-    )
+    return crop1, crop2
 
 
 def random_crop_with_transforms(
         image1: np.ndarray,
-        image2:np.ndarray,
-        window_size: int = 224) -> tuple:
+        image2: np.ndarray,
+        window_size: int = 224,
+        random_swap: bool = True) -> tuple:
     """
 
     Args:
         image1:
         image2:
         window_size:
+        random_swap:
 
     Returns:
 
     """
     return apply_transforms(
-        *random_crop(image1.copy(), image2.copy(), window_size)
+        *random_crop(image1.copy(), image2.copy(), window_size, random_swap)
     )
 
 
