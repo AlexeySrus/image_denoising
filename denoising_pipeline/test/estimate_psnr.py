@@ -25,7 +25,6 @@ def main():
     noise = np.array(Image.open(args.noise_image).convert('RGB'))
 
     psnr = cv2.PSNR(clear, noise)
-
     print('PSNR: {}'.format(psnr))
 
 
