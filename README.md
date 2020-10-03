@@ -73,6 +73,7 @@ model:
 dataset:
   type: 'pair'  # choose from 'pair', 'series', 'sequential', 
                 # 'separate' (requires a large amount of RAM)
+  dataset_size: 10000
 
   pair:
     image1_path: 'path to first image from pair'

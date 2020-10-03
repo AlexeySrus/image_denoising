@@ -21,7 +21,6 @@ class MWCNN(nn.Module):
         if activations == 'relu':
             act = nn.ReLU(True)
         elif activations == 'mish':
-            print('USE MISH!')
             act = Mish()
         else:
             raise RuntimeError(

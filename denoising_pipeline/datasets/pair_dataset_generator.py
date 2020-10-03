@@ -8,16 +8,17 @@ from denoising_pipeline.utils.tensor_utils import preprocess_image
 
 
 class TwoImagesDataset(Dataset):
-    def __init__(self, image1_path, image2_path, window_size,):
+    def __init__(self, image1_path, image2_path, window_size, dataset_size):
         self.img1 = load_image(image1_path)
         self.img2 = load_image(image2_path)
 
         assert self.img1.shape == self.img2.shape
 
         self.window_size = window_size
+        self.dataset_size = dataset_size
 
     def __len__(self):
-        return 50000
+        return self.dataset_size
 
     def __getitem__(self, idx):
         crop1, crop2 = random_crop_with_transforms(
@@ -31,7 +32,7 @@ class TwoImagesDataset(Dataset):
 
 
 class PairsSeriesDataset(Dataset):
-    def __init__(self, folder_path, window_size):
+    def __init__(self, folder_path, window_size, dataset_size):
         images_names_list = os.listdir(folder_path)
         images_names_list.sort()
 
@@ -46,11 +47,12 @@ class PairsSeriesDataset(Dataset):
             assert self.images[i].shape == self.images[i + 1].shape
 
         self.window_size = window_size
+        self.dataset_size = dataset_size
 
         self.indexes = np.array(list(range(len(self.images)))).reshape((-1, 2))
 
     def __len__(self):
-        return 10000
+        return self.dataset_size
 
     def __getitem__(self, idx):
         crop1, crop2 = random_crop_with_transforms(
@@ -62,7 +64,11 @@ class PairsSeriesDataset(Dataset):
 
 
 class SeriesAndClearDataset(Dataset):
-    def __init__(self, series_folders_path, clear_images_path, window_size):
+    def __init__(self,
+                 series_folders_path,
+                 clear_images_path,
+                 window_size,
+                 dataset_size):
         self.series_folders_pathes = [
             os.path.join(series_folders_path, sfp)
             for sfp in os.listdir(series_folders_path)
@@ -87,6 +93,7 @@ class SeriesAndClearDataset(Dataset):
         ]
 
         self.window_size = window_size
+        self.dataset_size = dataset_size
 
     def get_random_images(self):
         select_series_index = random.randint(
@@ -108,7 +115,7 @@ class SeriesAndClearDataset(Dataset):
         return select_image, clear_image
 
     def __len__(self):
-        return 10000
+        return self.dataset_size
 
     def __getitem__(self, idx):
         crop1, crop2 = random_crop_with_transforms(

@@ -1,7 +1,6 @@
 import cv2
 import os
 import numpy as np
-import random
 from torch.utils.data import Dataset
 from denoising_pipeline.utils.image_utils \
     import Rotate, rotate_crop
@@ -67,8 +66,12 @@ class VideoFramesGenerator:
 
 
 class SequentialDataset(Dataset):
-    def __init__(self, images_lists_path, window_size, series_size,
-                 out_type='center'):
+    def __init__(self,
+                 images_lists_path,
+                 window_size,
+                 series_size,
+                 out_type='center',
+                 dataset_size=10000):
         self.image_series = [
             [
                 cv2.imread(
@@ -96,6 +99,7 @@ class SequentialDataset(Dataset):
                 assert self.image_series[0][0].shape == img.shape
 
         self.window_size = window_size
+        self.dataset_size = dataset_size
         self.out_type = out_type
         self.series_size = series_size + 1
 
@@ -160,7 +164,7 @@ class SequentialDataset(Dataset):
         return tuple(imgs)
 
     def __len__(self):
-        return 10000
+        return self.dataset_size
 
     def __getitem__(self, idx):
         return tuple([

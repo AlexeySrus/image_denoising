@@ -10,7 +10,11 @@ from denoising_pipeline.utils.tensor_utils import preprocess_image
 
 
 class SeriesAndComputingClearDataset(Dataset):
-    def __init__(self, images_series_folder, clear_images_path, window_size):
+    def __init__(self,
+                 images_series_folder,
+                 clear_images_path,
+                 window_size,
+                 dataset_size):
         self.series_folders_pathes = [
             os.path.join(images_series_folder, sfp)
             for sfp in os.listdir(images_series_folder)
@@ -63,6 +67,7 @@ class SeriesAndComputingClearDataset(Dataset):
             )
 
         self.window_size = window_size
+        self.dataset_size = dataset_size
 
     def get_random_images(self):
         select_series_index = np.random.randint(
@@ -84,7 +89,7 @@ class SeriesAndComputingClearDataset(Dataset):
         return select_image, clear_image
 
     def __len__(self):
-        return 10000
+        return self.dataset_size
 
     def __getitem__(self, idx):
         crop1, crop2 = random_crop_with_transforms(
