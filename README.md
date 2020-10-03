@@ -68,7 +68,7 @@ model:
   wavelet:
     n_features: 64
     activations: 'relu' # choose from 'relu', 
-                        # 'mush' (requires a large amount of GPU memory)
+                        # 'mish' (requires a large amount of GPU memory)
 
 dataset:
   type: 'pair'  # choose from 'pair', 'series', 'sequential', 

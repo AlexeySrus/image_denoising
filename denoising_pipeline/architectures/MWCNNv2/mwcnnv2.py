@@ -1,4 +1,5 @@
 from denoising_pipeline.architectures.MWCNNv2 import common
+import torch
 import torch.nn as nn
 
 from denoising_pipeline.utils.activations import Mish
@@ -57,6 +58,13 @@ class MWCNN(nn.Module):
 
         m_tail = [conv(n_feats, nColor, kernel_size)]
 
+        self.pad_size = (kernel_size // 2) + 1 - 1
+        for layer_seq in [m_head, d_l0, d_l2, pro_l3, i_l2, i_l1, i_l0]:
+            for layer in layer_seq:
+                self.pad_size += layer.pad_size
+
+        # print('Model padding size: {}'.format(self.pad_size))
+
         self.head = nn.Sequential(*m_head)
         self.d_l2 = nn.Sequential(*d_l2)
         self.d_l1 = nn.Sequential(*d_l1)
@@ -77,6 +85,14 @@ class MWCNN(nn.Module):
         x = self.tail(self.i_l0(x_)) + x
 
         return x
+
+    def inference(self, x: torch.Tensor) -> torch.Tensor:
+        return self.forward(x)[
+            :,
+            :,
+            self.pad_size:-self.pad_size,
+            self.pad_size:-self.pad_size
+        ]
 
     def set_scale(self, scale_idx):
         self.scale_idx = scale_idx

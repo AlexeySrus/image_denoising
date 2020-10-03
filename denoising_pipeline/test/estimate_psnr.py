@@ -9,7 +9,7 @@ def parse_args():
         description='Estimate PSNR measure between two images'
     )
     parser.add_argument(
-        '--clean-image', type=str, required=True
+        '--clear-image', type=str, required=True
     )
     parser.add_argument(
         '--noise-image', type=str, required=True
@@ -21,7 +21,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    clear = np.array(Image.open(args.clean_image).convert('RGB'))
+    clear = np.array(Image.open(args.clear_image).convert('RGB'))
     noise = np.array(Image.open(args.noise_image).convert('RGB'))
 
     psnr = cv2.PSNR(clear, noise)

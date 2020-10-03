@@ -58,7 +58,7 @@ def main():
     model.load(args.model_weights)
 
     print('Model out shape: {}'.format(
-        model.model(*tuple([
+        model.model.inference(*tuple([
             torch.FloatTensor(
                 np.zeros((1, 3, window_size, window_size))
             ).to(device)

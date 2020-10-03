@@ -106,6 +106,7 @@ def iwt_init(x):
 class Channel_Shuffle(nn.Module):
     def __init__(self, conv_groups):
         super(Channel_Shuffle, self).__init__()
+        self.pad_size = 0
         self.conv_groups = conv_groups
         self.requires_grad = False
 
@@ -116,6 +117,7 @@ class Channel_Shuffle(nn.Module):
 class SP(nn.Module):
     def __init__(self):
         super(SP, self).__init__()
+        self.pad_size = 0
         self.requires_grad = False
 
     def forward(self, x):
@@ -125,6 +127,7 @@ class SP(nn.Module):
 class Pixel_Down_Shuffle(nn.Module):
     def __init__(self):
         super(Pixel_Down_Shuffle, self).__init__()
+        self.pad_size = 0
         self.requires_grad = False
 
     def forward(self, x):
@@ -134,6 +137,7 @@ class Pixel_Down_Shuffle(nn.Module):
 class DWT(nn.Module):
     def __init__(self):
         super(DWT, self).__init__()
+        self.pad_size = 0
         self.requires_grad = False
 
     def forward(self, x):
@@ -143,6 +147,7 @@ class DWT(nn.Module):
 class IWT(nn.Module):
     def __init__(self):
         super(IWT, self).__init__()
+        self.pad_size = 0
         self.requires_grad = False
 
     def forward(self, x):
@@ -153,6 +158,7 @@ class MeanShift(nn.Conv2d):
     def __init__(self, rgb_range, rgb_mean, rgb_std, sign=-1):
         super(MeanShift, self).__init__(3, 3, kernel_size=1)
         std = torch.Tensor(rgb_std)
+        self.pad_size = 0
         self.weight.data = torch.eye(3).view(3, 3, 1, 1)
         self.weight.data.div_(std.view(3, 1, 1, 1))
         self.bias.data = sign * rgb_range * torch.Tensor(rgb_mean)
@@ -167,6 +173,7 @@ class MeanShift2(nn.Conv2d):
     def __init__(self, rgb_range, rgb_mean, rgb_std, sign=-1):
         super(MeanShift2, self).__init__(4, 4, kernel_size=1)
         std = torch.Tensor(rgb_std)
+        self.pad_size = 0
         self.weight.data = torch.eye(4).view(4, 4, 1, 1)
         self.weight.data.div_(std.view(4, 1, 1, 1))
         self.bias.data = sign * rgb_range * torch.Tensor(rgb_mean)
@@ -180,6 +187,8 @@ class BasicBlock(nn.Sequential):
     def __init__(
             self, in_channels, out_channels, kernel_size, stride=1, bias=False,
             bn=False, act=nn.ReLU(True)):
+
+        self.pad_size = (kernel_size // 2) + 1 - 1
 
         m = [nn.Conv2d(
             in_channels, out_channels, kernel_size,
@@ -196,6 +205,8 @@ class BBlock(nn.Module):
             self, conv, in_channels, out_channels, kernel_size,
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
         super(BBlock, self).__init__()
+        self.pad_size = (kernel_size // 2) + 1 - 1
+
         m = []
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias))
         if bn: m.append(nn.BatchNorm2d(out_channels, eps=1e-4, momentum=0.95))
@@ -215,6 +226,8 @@ class DBlock_com(nn.Module):
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
         super(DBlock_com, self).__init__()
+
+        self.pad_size = (kernel_size // 2) + 2 - 1 + (kernel_size // 2) + 3 - 1
         m = []
 
         m.append(
@@ -240,6 +253,8 @@ class DBlock_inv(nn.Module):
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
         super(DBlock_inv, self).__init__()
+
+        self.pad_size = (kernel_size // 2) + 3 - 1 + (kernel_size // 2) + 2 - 1
         m = []
 
         m.append(
@@ -267,6 +282,8 @@ class DBlock_com1(nn.Module):
         super(DBlock_com1, self).__init__()
         m = []
 
+        self.pad_size = (kernel_size // 2) + 2 - 1 + (kernel_size // 2) + 1 - 1
+
         m.append(
             conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
         if bn: m.append(nn.BatchNorm2d(out_channels, eps=1e-4, momentum=0.95))
@@ -290,6 +307,8 @@ class DBlock_inv1(nn.Module):
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
         super(DBlock_inv1, self).__init__()
+        self.pad_size = (kernel_size // 2) + 2 - 1 + (kernel_size // 2) + 1 - 1
+
         m = []
 
         m.append(
@@ -315,6 +334,7 @@ class DBlock_com2(nn.Module):
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
         super(DBlock_com2, self).__init__()
+        self.pad_size = (kernel_size // 2) + 2 - 1 + (kernel_size // 2) + 2 - 1
         m = []
 
         m.append(
@@ -342,6 +362,8 @@ class DBlock_inv2(nn.Module):
         super(DBlock_inv2, self).__init__()
         m = []
 
+        self.pad_size = (kernel_size // 2) + 2 - 1 + (kernel_size // 2) + 2 - 1
+
         m.append(
             conv(in_channels, out_channels, kernel_size, bias=bias, dilation=2))
         if bn: m.append(nn.BatchNorm2d(out_channels, eps=1e-4, momentum=0.95))
@@ -364,6 +386,7 @@ class ShuffleBlock(nn.Module):
             self, conv, in_channels, out_channels, kernel_size,
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1, conv_groups=1):
         super(ShuffleBlock, self).__init__()
+        self.pad_size = (kernel_size // 2) + 1 - 1
         m = []
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias))
         m.append(Channel_Shuffle(conv_groups))
@@ -384,6 +407,7 @@ class DWBlock(nn.Module):
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
         super(DWBlock, self).__init__()
+        self.pad_size = (kernel_size // 2) + 1 - 1 + (kernel_size // 2)
         m = []
         m.append(conv(in_channels, out_channels, kernel_size, bias=bias))
         if bn: m.append(nn.BatchNorm2d(out_channels))
@@ -407,8 +431,10 @@ class ResBlock(nn.Module):
             bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
 
         super(ResBlock, self).__init__()
+        self.pad_size = 0
         m = []
         for i in range(2):
+            self.pad_size += (kernel_size // 2) + 1 - 1
             m.append(conv(n_feat, n_feat, kernel_size, bias=bias))
             if bn: m.append(nn.BatchNorm2d(n_feat))
             if i == 0: m.append(act)
@@ -430,7 +456,9 @@ class Block(nn.Module):
 
         super(Block, self).__init__()
         m = []
+        self.res_pad = 0
         for i in range(4):
+            self.pad_size += (kernel_size // 2) + 1 - 1
             m.append(conv(n_feat, n_feat, kernel_size, bias=bias))
             if bn: m.append(nn.BatchNorm2d(n_feat))
             if i == 0: m.append(act)
@@ -449,13 +477,16 @@ class Upsampler(nn.Sequential):
     def __init__(self, conv, scale, n_feat, bn=False, act=False, bias=True):
 
         m = []
+        self.pad_size = 0
         if (scale & (scale - 1)) == 0:  # Is scale = 2^n?
             for _ in range(int(math.log(scale, 2))):
+                self.pad_size += (3 // 2) + 1 - 1
                 m.append(conv(n_feat, 4 * n_feat, 3, bias))
                 m.append(nn.PixelShuffle(2))
                 if bn: m.append(nn.BatchNorm2d(n_feat))
                 if act: m.append(act())
         elif scale == 3:
+            self.pad_size += (3 // 2) + 1 - 1
             m.append(conv(n_feat, 9 * n_feat, 3, bias))
             m.append(nn.PixelShuffle(3))
             if bn: m.append(nn.BatchNorm2d(n_feat))
