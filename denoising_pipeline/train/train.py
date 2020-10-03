@@ -208,8 +208,8 @@ def main():
         )
     )
 
-    print('Model out shape: {}'.format(
-        model.model.inference(*tuple([
+    print('Train model out shape: {}'.format(
+        model.model(*tuple([
                                torch.FloatTensor(
                                    np.zeros((1, 3, window_size, window_size))
                                ).to(device)
