@@ -55,13 +55,18 @@ def main():
     epochs = config['train']['epochs']
     window_size = config['model']['window_size']
 
-    if not os.path.isdir(config['train']['save']['model']):
-        os.makedirs(config['train']['save']['model'])
+    checkpoint_folder = os.path.join(
+        os.path.dirname(__file__),
+        config['train']['save']['checkpoint_folder']
+    )
+
+    if not os.path.isdir(checkpoint_folder):
+        os.makedirs(checkpoint_folder)
 
     copyfile(
         args.config,
         os.path.join(
-            config['train']['save']['model'],
+            checkpoint_folder,
             os.path.basename(args.config)
         )
     )
@@ -96,18 +101,12 @@ def main():
     callbacks = []
 
     callbacks.append(SaveModelPerEpoch(
-        os.path.join(
-            os.path.dirname(__file__),
-            config['train']['save']['model']
-        ),
+        checkpoint_folder,
         config['train']['save']['every']
     ))
 
     callbacks.append(SaveOptimizerPerEpoch(
-        os.path.join(
-            os.path.dirname(__file__),
-            config['train']['save']['model']
-        ),
+        checkpoint_folder,
         config['train']['save']['every']
     ))
 
@@ -178,10 +177,7 @@ def main():
 
     if config['train']['load_model'] or config['train']['load_optimizer']:
         weight_path, optim_path, start_epoch = get_last_epoch_weights_path(
-            os.path.join(
-                os.path.dirname(__file__),
-                config['train']['save']['model']
-            ),
+            checkpoint_folder,
             print
         )
 

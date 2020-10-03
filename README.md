@@ -83,7 +83,7 @@ dataset:
     clear_images_path: 'path to clear images'
 
 train:
-  optimizer: 'sgd' # choose from 'adam', 'nadam', 'radam', 'sgd'
+  optimizer: 'sgd' # choose from 'adam', 'adamw', 'nadam', 'radam', 'sgd'
   lr: 0.0000001
   weight_decay: 0
 
@@ -98,7 +98,7 @@ train:
     devices: ['cuda:0', 'cuda:1']
 
   save:
-    model: 'path to saved weights and logs'
+    checkpoint_folder: 'path to saved weights and logs'
     every: 10
 
   load_model: False

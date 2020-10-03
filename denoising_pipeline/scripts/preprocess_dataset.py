@@ -56,7 +56,7 @@ def main():
             images = np.array([
                 np.array(Image.open(im).convert('RGB'))
                 for k, im in enumerate(images_pathes)
-                if k != img_index
+                # if k != img_index
             ]).astype(np.float16)
 
             mean_image = images.mean(axis=0)
