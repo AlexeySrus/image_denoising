@@ -5,12 +5,12 @@ from denoising_pipeline.architectures.video_model import \
     VideoImprovingNet as SequentialNet
 from denoising_pipeline.architectures.frequency_separation_model import \
     DenoisingNet as FrequencySeparationNet
+from denoising_pipeline.architectures.MWCNNv2.mwcnnv2 import MWCNN
 
 
 def build_model_from_config(config: dict) -> torch.nn.Module:
     window_size = config['model']['window_size']
 
-    denoising_model = None
     if config['model']['architecture'] == 'simple':
         denoising_model = SimpleDenoisingNet()
     elif config['model']['architecture'] == 'sequential':
@@ -26,6 +26,10 @@ def build_model_from_config(config: dict) -> torch.nn.Module:
             n2=config['model'][
                 config['model']['architecture']
             ]['union_filters_count']
+        )
+    elif config['model']['architecture'] == 'wavelet':
+        denoising_model = MWCNN(
+            **config['model'][config['model']['architecture']]
         )
     else:
         raise NotImplementedError(

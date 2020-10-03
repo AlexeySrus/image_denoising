@@ -84,7 +84,7 @@ class SeriesAndComputingClearDataset(Dataset):
         return select_image, clear_image
 
     def __len__(self):
-        return 100000
+        return 10000
 
     def __getitem__(self, idx):
         crop1, crop2 = random_crop_with_transforms(

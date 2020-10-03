@@ -53,6 +53,7 @@ model:
   architecture: 'simple'  # choose from 'simple', 
                           # 'sequential' (work only with series dataset type), 
                           # 'advanced' (use image frequency decomposition)
+                          # 'wavelet'
 
   sequential:
     series_size: 5
@@ -63,6 +64,11 @@ model:
   advanced:
     separate_filters_count: 1
     union_filters_count: 1
+
+  wavelet:
+    n_features: 64
+    activations: 'relu' # choose from 'relu', 
+                        # 'mush' (requires a large amount of GPU memory)
 
 dataset:
   type: 'pair'  # choose from 'pair', 'series', 'sequential', 

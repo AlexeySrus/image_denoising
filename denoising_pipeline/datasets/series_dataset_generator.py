@@ -160,7 +160,7 @@ class SequentialDataset(Dataset):
         return tuple(imgs)
 
     def __len__(self):
-        return 100000
+        return 10000
 
     def __getitem__(self, idx):
         return tuple([
