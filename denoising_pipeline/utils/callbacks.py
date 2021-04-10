@@ -69,6 +69,48 @@ class SaveOptimizerPerEpoch(AbstractCallback):
         ))
 
 
+class SaveGANOptimizerPerEpoch(AbstractCallback):
+    def __init__(self, path, save_step=1):
+        self.path = path
+        self.step=save_step
+
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+    def per_batch(self, args):
+        pass
+
+    def per_epoch(self, args):
+        if args['n'] % self.step == 0:
+            torch.save(args['generator_optimize_state'], (
+                os.path.join(
+                    self.path,
+                    'generator_optimize_state-{}.trh'.format(args['n'])
+                )
+            ))
+
+            torch.save(args['discriminator_optimize_state'], (
+                os.path.join(
+                    self.path,
+                    'discriminator_optimize_state-{}.trh'.format(args['n'])
+                )
+            ))
+
+    def early_stopping(self, args):
+        torch.save(args['generator_optimize_state'], (
+            os.path.join(
+                self.path,
+                'early_genetator_optimize_state-{}.trh'.format(args['n'])
+            )
+        ))
+
+        torch.save(args['discriminator_optimize_state'], (
+            os.path.join(
+                self.path,
+                'early_discriminator_optimize_state-{}.trh'.format(args['n'])
+            )
+        ))
+
 class VisPlot(AbstractCallback):
     def __init__(self, title, server='https://localhost', port=8080):
         self.viz = Visdom(server=server, port=port)
@@ -84,7 +126,8 @@ class VisPlot(AbstractCallback):
 
         self.windows[name] = [None, options]
 
-    def update_scatterplot(self, name, x, y1, y2=None, window_size=100):
+    def update_scatterplot(self, name, x, y1, y2=None, y3=None,
+                           window_size=100):
         """
         Update plot
         Args:
@@ -92,9 +135,20 @@ class VisPlot(AbstractCallback):
             x: x values for plotting
             y1: y values for plotting
             y2: plot can contains two graphs
+            y3: plot can contains three graphs
             window_size: window size for plot smoothing (by mean in window)
         Returns:
         """
+        if y2 is not None and y3 is not None:
+            self.windows[name][0] = self.viz.line(
+                np.array([[y1, y2, y3]], dtype=np.float32),
+                np.array([x], dtype=np.float32),
+                win=self.windows[name][0],
+                opts=self.windows[name][1],
+                update='append' if self.windows[name][0] is not None else None
+            )
+            return
+
         if y2 is None:
             self.windows[name][0] = self.viz.line(
                 np.array([y1], dtype=np.float32),
@@ -115,7 +169,8 @@ class VisPlot(AbstractCallback):
     def per_batch(self, args, keyward='per_batch'):
         for win in self.windows.keys():
             if keyward in win:
-                if 'train' in win:
+                if 'train' in win and 'generator' not in win and \
+                        'discriminator' not in win:
                     self.update_scatterplot(
                         win,
                         args['n'],
@@ -123,12 +178,62 @@ class VisPlot(AbstractCallback):
                         args['loss_xn']
                     )
 
-                if 'validation' in win:
+                if 'validation' in win and 'generator' not in win and \
+                        'discriminator' not in win:
                     self.update_scatterplot(
                         win,
                         args['n'],
                         args['val loss'],
                         args['val acc']
+                    )
+
+                if 'train' in win and 'generator' in win and \
+                        'separating' not in win:
+                    self.update_scatterplot(
+                        win,
+                        args['n'],
+                        args['generator_loss'],
+                    )
+
+                if 'train' in win and 'content' in win and \
+                        'separating' in win:
+                    self.update_scatterplot(
+                        win,
+                        args['n'],
+                        args['generator_content_loss'],
+                    )
+
+                if 'train' in win and 'pixel' in win and \
+                        'separating' in win:
+                    self.update_scatterplot(
+                        win,
+                        args['n'],
+                        args['generator_pixel_wise_loss'],
+                    )
+
+                if 'train' in win and 'adversarial' in win and \
+                        'separating' in win:
+                    self.update_scatterplot(
+                        win,
+                        args['n'],
+                        args['generator_adversarial_loss'],
+                    )
+
+                # if 'train' in win and 'generator' in win and \
+                #         'separating' in win:
+                #     self.update_scatterplot(
+                #         win,
+                #         args['n'],
+                #         args['generator_content_loss'],
+                #         args['generator_pixel_wise_loss'],
+                #         args['generator_adversarial_loss']
+                #     )
+
+                if 'train' in win and 'discriminator' in win:
+                    self.update_scatterplot(
+                        win,
+                        args['n'],
+                        args['discriminator_loss'],
                     )
 
     def per_epoch(self, args, keyward='per_epoch'):

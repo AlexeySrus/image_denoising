@@ -9,6 +9,7 @@ from denoising_pipeline.model_estimator.model import \
     Model, get_last_epoch_weights_path
 from denoising_pipeline.utils.callbacks import (SaveModelPerEpoch, VisPlot,
                                                SaveOptimizerPerEpoch,
+                                               SaveGANOptimizerPerEpoch,
                                                VisImageForAE)
 from denoising_pipeline.datasets.configure_dataset import \
     build_dataset_from_config
@@ -17,6 +18,7 @@ from denoising_pipeline.utils.optimizers import Nadam, RangerAdam as Radam
 from denoising_pipeline.utils.losses import FourierImagesLoss
 from denoising_pipeline.architectures.configure_model import \
     build_model_from_config
+from denoising_pipeline.architectures.discriminator import Discriminator
 
 
 def parse_args():
@@ -54,6 +56,7 @@ def main():
     n_jobs = config['train']['number_of_processes']
     epochs = config['train']['epochs']
     window_size = config['model']['window_size']
+    is_adversarial_train = config['train']['training_approach'] == 'adversarial'
 
     checkpoint_folder = os.path.join(
         os.path.dirname(__file__),
@@ -91,11 +94,18 @@ def main():
 
     denoising_model = build_model_from_config(config)
 
+    discriminator = None
+    if is_adversarial_train:
+        discriminator = Discriminator(
+            input_shape=(3, window_size, window_size)
+        )
+
     model = Model(
         denoising_model,
         device,
         distributed_learning=config['train']['distribution_learning']['enable'],
-        distributed_devices=config['train']['distribution_learning']['devices']
+        distributed_devices=config['train']['distribution_learning']['devices'],
+        discriminator=discriminator
     )
 
     callbacks = []
@@ -105,38 +115,96 @@ def main():
         config['train']['save']['every']
     ))
 
-    callbacks.append(SaveOptimizerPerEpoch(
-        checkpoint_folder,
-        config['train']['save']['every']
-    ))
+    if not is_adversarial_train:
+        callbacks.append(SaveOptimizerPerEpoch(
+            checkpoint_folder,
+            config['train']['save']['every']
+        ))
+    else:
+        callbacks.append(SaveGANOptimizerPerEpoch(
+            checkpoint_folder,
+            config['train']['save']['every']
+        ))
 
     if config['visualization']['use_visdom']:
         plots = VisPlot(
-            'Image denoising train',
+            'Image denoising {} train'.format(
+                config['train']['training_approach']
+            ),
             server=config['visualization']['visdom_server'],
             port=config['visualization']['visdom_port']
         )
 
-        plots.register_scatterplot('train loss per_batch', 'Batch number',
-                                   'Loss',
-                                   [
-                                       '{} between predicted and ground truth'
-                                       ''.format(config['train']['loss']),
-                                       '{} between predicted and input'
-                                       ''.format(config['train']['loss'])
-                                   ])
+        if not is_adversarial_train:
+            # plots.register_scatterplot('train loss per_batch', 'Batch number',
+            #                            'Loss',
+            #                            [
+            #                                '{} between '
+            #                                'predicted and ground truth'
+            #                                ''.format(config['train']['loss']),
+            #                                '{} between predicted and input'
+            #                                ''.format(config['train']['loss'])
+            #                            ])
 
-        plots.register_scatterplot('train validation loss per_epoch',
-                                   'Batch number',
-                                   'Loss',
-                                   [
-                                       '{} train loss'.format(
-                                           config['train']['loss']
-                                       ),
-                                       'double {} train loss'.format(
-                                           config['train']['loss']
-                                       )
-                                   ])
+            plots.register_scatterplot('train validation loss per_epoch',
+                                       'Batch number',
+                                       'Loss',
+                                       [
+                                           '{} train loss'.format(
+                                               config['train']['loss']
+                                           ),
+                                           'double {} train loss'.format(
+                                               config['train']['loss']
+                                           )
+                                       ])
+        else:
+            plots.register_scatterplot('train loss generator per_batch',
+                                       'Batch number',
+                                       'Loss',
+                                       [
+                                           'Generator loss',
+                                       ])
+
+            plots.register_scatterplot('train loss generator '
+                                       'separating content per_batch',
+                                       'Batch number',
+                                       'Loss',
+                                       [
+                                           'Generator content loss',
+                                       ])
+
+            plots.register_scatterplot('train loss generator '
+                                       'separating pixel per_batch',
+                                       'Batch number',
+                                       'Loss',
+                                       [
+                                           'Generator pixel-wise loss',
+                                       ])
+
+            plots.register_scatterplot('train loss generator '
+                                       'separating adversarial per_batch',
+                                       'Batch number',
+                                       'Loss',
+                                       [
+                                           'Generator adversarial loss',
+                                       ])
+
+            # plots.register_scatterplot('train loss generator separating '
+            #                            'per_batch',
+            #                            'Batch number',
+            #                            'Loss',
+            #                            [
+            #                                'Content loss',
+            #                                'Pixel-wise loss',
+            #                                'Adversarial loss',
+            #                            ])
+
+            plots.register_scatterplot('train loss discriminator per_batch',
+                                       'Batch number',
+                                       'Loss',
+                                       [
+                                           'Discriminator loss',
+                                       ])
 
         callbacks.append(plots)
 
@@ -172,8 +240,24 @@ def main():
             weight_decay=config['train']['weight_decay'],
             momentum=0.9,
             nesterov=True
-
         )
+
+    discriminator_optimizer = None
+    if is_adversarial_train:
+        if config['train']['optimizer'] != 'sgd':
+            discriminator_optimizer = optimizers[config['train']['optimizer']](
+                model.discriminator.parameters(),
+                lr=config['train']['lr'],
+                weight_decay=config['train']['weight_decay']
+            )
+        else:
+            discriminator_optimizer = torch.optim.SGD(
+                model.discriminator.parameters(),
+                lr=config['train']['lr'],
+                weight_decay=config['train']['weight_decay'],
+                momentum=0.9,
+                nesterov=True
+            )
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -216,15 +300,32 @@ def main():
                            ] * series_size)).shape
     ))
 
-    model.fit(
-        train_data,
-        (optimizer, scheduler),
-        epochs,
-        losses[config['train']['loss']],
-        init_start_epoch=start_epoch + 1,
-        validation_loader=None,
-        is_epoch_scheduler=False
-    )
+    if not is_adversarial_train:
+        model.fit(
+            train_data,
+            (optimizer, scheduler),
+            epochs,
+            losses[config['train']['loss']],
+            init_start_epoch=start_epoch + 1,
+            validation_loader=None,
+            is_epoch_scheduler=False
+        )
+    else:
+        model.adversarial_fit(
+            train_data,
+            optimizer,
+            discriminator_optimizer,
+            epochs=epochs,
+            discriminator_output_shape=discriminator.output_shape,
+            pixel_wise_loss_function=losses[config['train']['loss']],
+            loss_weights=(
+                             config['train']['content_loss_scale'],
+                             config['train']['adversarial_loss_scale'],
+                             config['train']['pixel_wise_loss_scale']
+                         ),
+            init_start_epoch=start_epoch + 1,
+            validation_loader=None
+        )
 
 
 if __name__ == '__main__':

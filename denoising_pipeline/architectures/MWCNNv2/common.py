@@ -6,6 +6,27 @@ import torch.nn.functional as F
 
 from torch.autograd import Variable
 
+from lambda_networks import LambdaLayer
+import math
+
+
+def get_heads_count(channels):
+    for i in range(4, channels):
+        if channels % i == 0:
+            return i
+    return 1
+
+
+def lambda_conv(in_channels, out_channels, kernel_size, bias=True, dilation=1):
+    return LambdaLayer(
+        dim=in_channels,
+        dim_out=out_channels,
+        r=23,
+        dim_k=16,
+        heads=get_heads_count(out_channels),
+        dim_u=1
+    )
+
 
 def default_conv(in_channels, out_channels, kernel_size, bias=True, dilation=1):
     return nn.Conv2d(

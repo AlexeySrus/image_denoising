@@ -3,6 +3,8 @@ import torch.nn as nn
 from denoising_pipeline.utils.tensor_utils import center_pad_tensor_like
 from denoising_pipeline.architectures.resnet_block import BasicBlock
 import numpy as np
+from lambda_networks import LambdaLayer
+from denoising_pipeline.architectures.MWCNNv2.common import get_heads_count
 
 
 def generate_batt(size=(5, 5), d0=5, n=2):
@@ -13,6 +15,17 @@ def generate_batt(size=(5, 5), d0=5, n=2):
         (size[0], size[1])
     )
     return kernel
+
+
+def lambda_conv(in_channels, out_channels, **kwargs):
+    return LambdaLayer(
+        dim=in_channels,
+        dim_out=out_channels,
+        r=23,
+        dim_k=16,
+        heads=get_heads_count(out_channels),
+        dim_u=1
+    )
 
 
 class HightFrequencyImageComponent(nn.Module):
@@ -124,45 +137,47 @@ class LowFrequencyImageComponent(nn.Module):
 
 
 class DenoisingNet(nn.Module):
-    def __init__(self, shape, n1=1, n2=1):
+    def __init__(self, shape, n1=1, n2=1, conv_layer=nn.Conv2d):
         super().__init__()
+
+        self.conv_layer = conv_layer
 
         self.HFILayer = HightFrequencyImageComponent(shape=shape)
         self.LFILayer = LowFrequencyImageComponent(shape=shape)
 
         self.I_preprocessing = nn.Sequential(
-            nn.Conv2d(3, 15, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(3, 15, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(15, 20, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(15, 20, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(20, 35, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(20, 35, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
             nn.Sequential(*tuple([BasicBlock(35, 35) for _ in range(n1)])),
-            nn.Conv2d(35, 15, kernel_size=5, stride=1, padding=0, bias=False)
+            self.conv_layer(35, 15, kernel_size=5, stride=1, padding=0, bias=False)
             # nn.ReLU()
         )
 
         self.HFI_preprocessing = nn.Sequential(
-            nn.Conv2d(1, 5, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(1, 5, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(5, 10, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(5, 10, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(10, 15, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(10, 15, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
             nn.Sequential(*tuple([BasicBlock(15, 15) for _ in range(n1)])),
-            nn.Conv2d(15, 5, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(15, 5, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU()
         )
 
         self.LFI_preprocessing = nn.Sequential(
-            nn.Conv2d(1, 5, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(1, 5, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(5, 10, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(5, 10, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(10, 15, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(10, 15, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU(),
             nn.Sequential(*tuple([BasicBlock(15, 15) for _ in range(n1)])),
-            nn.Conv2d(15, 5, kernel_size=5, stride=1, padding=0, bias=False),
+            self.conv_layer(15, 5, kernel_size=5, stride=1, padding=0, bias=False),
             nn.ReLU()
         )
 

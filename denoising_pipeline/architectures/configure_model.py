@@ -6,6 +6,7 @@ from denoising_pipeline.architectures.video_model import \
 from denoising_pipeline.architectures.frequency_separation_model import \
     DenoisingNet as FrequencySeparationNet
 from denoising_pipeline.architectures.MWCNNv2.mwcnnv2 import MWCNN
+from denoising_pipeline.architectures.lambda_net import LambdaNet
 
 
 def build_model_from_config(config: dict) -> torch.nn.Module:
@@ -31,6 +32,8 @@ def build_model_from_config(config: dict) -> torch.nn.Module:
         denoising_model = MWCNN(
             **config['model'][config['model']['architecture']]
         )
+    elif config['model']['architecture'] == 'lambda':
+        denoising_model = LambdaNet()
     else:
         raise NotImplementedError(
             'Set not supported model architecture: {}'.format(
