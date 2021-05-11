@@ -57,3 +57,4 @@ def rotate_tensor(img: torch.Tensor, rot_value: TensorRotate) -> torch.Tensor:
         Rotated image in same of input format
     """
     return rot_value(img)
+

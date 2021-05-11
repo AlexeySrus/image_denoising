@@ -2,6 +2,7 @@ import torch
 from torch.nn import functional
 from lambda_networks import LambdaLayer
 from denoising_pipeline.utils.activations import mish
+from denoising_pipeline.utils.tensor_utils import center_pad_tensor_like
 
 
 class LambdaNet(torch.nn.Module):
@@ -35,6 +36,10 @@ class LambdaNet(torch.nn.Module):
         return y
         # y = torch.nn.functional.relu(y)
         # return self.last_conv(y)
+
+    def inference(self, x):
+        return center_pad_tensor_like(self.forward(x), torch.rand(x.size(0), x.size(1), x.size(2) - 16, x.size(3) - 16, device=x.device))
+
 #
 # import torch.nn as nn
 # import torch.nn.functional as F

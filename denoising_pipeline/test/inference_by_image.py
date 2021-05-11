@@ -8,6 +8,7 @@ from denoising_pipeline.model_estimator.model import Model
 from denoising_pipeline.architectures.configure_model import \
     build_model_from_config
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Video denoising train script')
     parser.add_argument('--config', required=False, type=str,
@@ -20,7 +21,7 @@ def parse_args():
                         help='Path to image file')
     parser.add_argument('--output-image', required=True, type=str,
                         help='Path to result image file')
-    parser.add_argument('--batch-size', required=False, type=int, default=64,
+    parser.add_argument('--batch-size', required=False, type=int, default=16,
                         help='Inference model batch size')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
