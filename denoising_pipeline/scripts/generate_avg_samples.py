@@ -52,23 +52,23 @@ def main():
             if '.DS_Store' not in iname
         ]
 
-        for img_index in range(len(images_pathes)):
-            images = np.array([
-                np.array(Image.open(im).convert('RGB'))
-                for k, im in enumerate(images_pathes)
-                if k != img_index
-            ]).astype(np.float16)
+        img_index = 0
 
-            mean_image = images.mean(axis=0)
+        images = np.array([
+            np.array(Image.open(im).convert('RGB'))
+            for k, im in enumerate(images_pathes)
+        ]).astype(np.float16)
 
-            Image.fromarray(
-                mean_image.astype(np.uint8)
-            ).save(
-                os.path.join(
-                    clears_series_folders_pathes[i],
-                    'mean_image_without_{}.png'.format(img_index)
-                )
+        mean_image = images.mean(axis=0)
+
+        Image.fromarray(
+            mean_image.astype(np.uint8)
+        ).save(
+            os.path.join(
+                clears_series_folders_pathes[i],
+                'mean_image_{}.png'.format(img_index)
             )
+        )
 
 
 if __name__ == '__main__':
